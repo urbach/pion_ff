@@ -171,11 +171,11 @@ int main (int ac, char* av[]) {
     
     cout << "Computing 2-pt function " << endl;
     for(int tt = 0; tt < T; tt++) {
-      int t = (tt - t0+T)%T;
+      int t = (tt + t0)%T;
       //int t = tt;
       vector_range< vector< complex<double> > > vr(v, range(svol*12*t, svol*12*(t+1)));
       vector_range< vector< complex<double> > > bvr(bv, range(svol*12*t, svol*12*(t+1)));
-      ppcor[t] += real(inner_prod(conj(bvr), vr));
+      ppcor[tt] += real(inner_prod(conj(bvr), vr));
     }
 
     cout << "Computing 3-pt function for local vector V_0" << endl;
