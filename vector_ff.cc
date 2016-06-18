@@ -120,8 +120,9 @@ int main (int ac, char* av[]) {
 
   double *ppcor = new double[T];
   double *cor = new double[T];
-  double *scor = new double[T];
+  complex<double> *scor = new complex<double>[T];
   double *tmp = new double[T];
+  complex<double> *stmp = new complex<double>[T];
   // set correlators to zero
   for(int t = 0; t < T; t++) {
     ppcor[t] = 0.;
@@ -189,10 +190,10 @@ int main (int ac, char* av[]) {
     }
 
     cout << "Computing 3-pt function for scalar" << endl;
-    scalar(tmp, v, gv, (long unsigned int) T, (long unsigned int) L);
+    scalar(stmp, v, gv, (long unsigned int) T, (long unsigned int) L);
     for(int tt = 0; tt < T; tt++) {
       int t = (tt - t0+T)%T;
-      scor[t] += tmp[tt];
+      scor[t] += stmp[tt];
     }
   }
 
@@ -256,7 +257,8 @@ int main (int ac, char* av[]) {
   oss3 << ends;
   ofs.open(oss3.str().c_str());
   for(int t = 0; t < T; t++) {
-    ofs << t << " " << scor[t]*2*2*2*kappa*kappa*kappa/double(samples) << endl;
+    ofs << t << " " << real(scor[t]*2*2*2*kappa*kappa*kappa/double(samples)) << " " <<
+      imag(scor[t]*2*2*2*kappa*kappa*kappa/double(samples)) << endl;
   }
   ofs.close();
   

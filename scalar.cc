@@ -26,7 +26,7 @@ extern compressed_matrix<complex<double> > gamma1;
 extern compressed_matrix<complex<double> > gamma2;
 extern compressed_matrix<complex<double> > gamma3;
 
-void scalar(double cor[],
+void scalar(complex<double> cor[],
             vector< complex<double> > &u,
             vector< complex<double> > &v,
             const long unsigned int T, const long unsigned int L) {
@@ -40,9 +40,9 @@ void scalar(double cor[],
 	  size_t ix = get_index(t, x, y, z, T, L);
           size_t mu = 0;
           size_t k = gsi(ix);
-          // S^\dagger(x) \gamma5\gamma_mu times v
+          // S^\dagger(x)  times v
           for(size_t i = 0; i < 12; i+=3) {
-            cor[t] += real(inner_prod(conj(project(u, range(k+i, k+i+3))), gamma_factor[5][i/3]*project(v, range(k+i, k+i+3))));
+            cor[t] += inner_prod(conj(project(u, range(k+i, k+i+3))), project(v, range(k+i, k+i+3)));
           }
 	}
       }

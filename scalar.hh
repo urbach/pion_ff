@@ -13,7 +13,7 @@
 using namespace boost::numeric::ublas;
 using std::complex;
 
-void scalar(double cor[],
+void scalar(complex<double> cor[],
             vector< complex<double> > &u,
             vector< complex<double> > &v,
             const long unsigned int T, const long unsigned int L);
