@@ -14,6 +14,7 @@
 #include <boost/program_options.hpp>
 #include "geometry.hh"
 #include "local_vec.hh"
+#include "scalar.hh"
 #include "gamma.hh"
 #include "io.hh"
 
@@ -119,11 +120,13 @@ int main (int ac, char* av[]) {
 
   double *ppcor = new double[T];
   double *cor = new double[T];
+  double *scor = new double[T];
   double *tmp = new double[T];
   // set correlators to zero
   for(int t = 0; t < T; t++) {
     ppcor[t] = 0.;
     cor[t] = 0.;
+    scor[t] = 0.;
   }
 
   for(size_t s = 0; s < samples; s++) {
@@ -185,6 +188,12 @@ int main (int ac, char* av[]) {
       cor[t] += tmp[tt];
     }
 
+    cout << "Computing 3-pt function for scalar" << endl;
+    scalar(tmp, v, gv, (long unsigned int) T, (long unsigned int) L);
+    for(int tt = 0; tt < T; tt++) {
+      int t = (tt - t0+T)%T;
+      scor[t] += tmp[tt];
+    }
   }
 
   // now the output
@@ -228,6 +237,26 @@ int main (int ac, char* av[]) {
   ofs.open(oss2.str().c_str());
   for(int t = 0; t < T; t++) {
     ofs << t << " " << cor[t]*2*2*2*kappa*kappa*kappa/double(samples) << endl;
+  }
+  ofs.close();
+
+  ostringstream oss3;
+  oss3 << "scalar_ff.";
+  prev2 = oss3.width(2);
+  prev = oss3.fill('0'); 
+  oss3 << momentum;
+  oss3.fill(prev);
+  oss3.width(prev2);
+  oss3 << ".";
+  oss3.width(4);
+  oss3.fill('0'); 
+  oss3 << nstore;
+  oss3.fill(prev);
+  oss3.width(prev2);
+  oss3 << ends;
+  ofs.open(oss3.str().c_str());
+  for(int t = 0; t < T; t++) {
+    ofs << t << " " << scor[t]*2*2*2*kappa*kappa*kappa/double(samples) << endl;
   }
   ofs.close();
   

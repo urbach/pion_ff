@@ -15,6 +15,9 @@ io.o: io.cc io.hh Makefile
 local_vec.o: %.o: %.cc %.hh geometry.hh Makefile
 	${CXX} ${INCLUDE} ${CXXFLAGS} -c -o $@ $<
 
+scalar.o: %.o: %.cc %.hh geometry.hh Makefile
+	${CXX} ${INCLUDE} ${CXXFLAGS} -c -o $@ $<
+
 gamma.o: gamma.cc gamma.hh Makefile
 	${CXX} ${INCLUDE} ${CXXFLAGS} -c -o $@ $<
 
@@ -24,8 +27,8 @@ vector_ff.o: vector_ff.cc  Makefile local_vec.hh io.hh gamma.hh geometry.hh
 ppcor.o: ppcor.cc Makefile io.hh
 	${CXX} ${INCLUDE} ${CXXFLAGS} -c -o $@ $<
 
-vector_ff: vector_ff.o local_vec.o io.o gamma.o dml.o DML_crc32.o 
-	${CXX} ${CXXFLAGS} -o $@ vector_ff.o io.o local_vec.o gamma.o dml.o DML_crc32.o ${LIBS}
+vector_ff: vector_ff.o local_vec.o scalar.o io.o gamma.o dml.o DML_crc32.o 
+	${CXX} ${CXXFLAGS} -o $@ vector_ff.o io.o local_vec.o scalar.o gamma.o dml.o DML_crc32.o ${LIBS}
 
 ppcor: ppcor.o dml.o DML_crc32.o
 	${CXX} ${CXXFLAGS} -o $@ ppcor.o io.o dml.o DML_crc32.o ${LIBS}
