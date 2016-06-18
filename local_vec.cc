@@ -31,9 +31,6 @@ void local_vec(double cor[],
 	       vector< complex<double> > &v,
 	       const long unsigned int T, const long unsigned int L) {
 
-  compressed_matrix< complex<double> > gamma(12, 12, 12);
-  project(gamma, range(0,12), range(0,12)) = prod(gamma5, gamma0);
-
   vector< complex<double> > vtmp(12);
   for(size_t t = 0; t < T; t++) {
     cor[t] = 0.;
