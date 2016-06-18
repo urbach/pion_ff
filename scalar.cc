@@ -42,7 +42,7 @@ void scalar(double cor[],
           size_t k = gsi(ix);
           // S^\dagger(x) \gamma5\gamma_mu times v
           for(size_t i = 0; i < 12; i+=3) {
-            cor[t] += real(inner_prod(conj(project(u, range(k+i, k+i+3))), gamma_factor[5][i/3]*project(v, range(k+i*3, k+i*3+3))));
+            cor[t] += real(inner_prod(conj(project(u, range(k+i, k+i+3))), gamma_factor[5][i/3]*project(v, range(k+i, k+i+3))));
           }
 	}
       }
