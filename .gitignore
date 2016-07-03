@@ -27,6 +27,8 @@
 *.exe
 *.out
 *.app
+vector_ff
+ppcor
 
 # emacs copies
 *~
