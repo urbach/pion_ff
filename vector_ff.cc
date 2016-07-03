@@ -40,10 +40,10 @@ compressed_matrix<complex<double> > gamma3 (12, 12, 12);
 int main (int ac, char* av[]) {
 
   int T, L, t0 = -1, nstore;
-  string propfilename, gpropfilename, configfilename, bpropfilename;
+  string propfilename, gpropfilename, bpropfilename;
   double kappa;
   int proppos, gproppos, bproppos, momentum, samples;
-  bool binary = false;
+  bool binary, sampleout;
   try {
     po::options_description desc("Allowed options");
     desc.add_options()
@@ -52,15 +52,15 @@ int main (int ac, char* av[]) {
       ("temporalsize,T", po::value<int>(&T), "temporal lattice size")
       ("config-number,n", po::value<int>(&nstore)->default_value(0), "configuration number")
       ("kappa,k", po::value<double>(&kappa)->default_value(0.5), "hopping parameter value")
-      ("propagator-filename", po::value< string >(&propfilename), "basefile name of the propagator")
-      ("b-propagator-filename", po::value< string >(&bpropfilename), "basefile name of the b-propagator")
-      ("gen-propagator-filename", po::value< string >(&gpropfilename), "basefile name of the generalised propagator")
-      ("config-filename", po::value< string >(&configfilename), "configuration filename")
-      ("propagator-pos", po::value< int >(&proppos)->default_value(0), "position of propagator binary data in lime file")
-      ("gen-propagator-pos", po::value< int >(&gproppos)->default_value(0), "position of gen-propagator binary data in lime file")
-      ("b-propagator-pos", po::value< int >(&bproppos)->default_value(0), "position of propagator binary data in lime file")
+      ("propagator-filename", po::value< string >(&propfilename), "basefile name of the forward propagator")
+      ("b-propagator-filename", po::value< string >(&bpropfilename), "basefile name of the second forward propagator")
+      ("gen-propagator-filename", po::value< string >(&gpropfilename), "basefile name of the sequential propagator")
+      ("propagator-pos", po::value< int >(&proppos)->default_value(0), "position of forward propagator binary data in lime file")
+      ("gen-propagator-pos", po::value< int >(&gproppos)->default_value(0), "position of sequential propagator binary data in lime file")
+      ("b-propagator-pos", po::value< int >(&bproppos)->default_value(0), "position of second forward propagator binary data in lime file")
       ("momentum,p",  po::value< int >(&momentum)->default_value(0), "momentum counter for naming output files")
-      ("binary,b", "write results in binary format instead of text format")
+      ("binary,b", po::value< bool >(&binary)->default_value(false), "write results in binary format instead of text format")
+      ("sample-output,S", po::value< bool >(&sampleout)->default_value(false), "write results additionally sample-wise in binary format") 
       ("samples,s", po::value< int >(&samples)->default_value(1), "number of samples per gauge")
       ;
 
@@ -86,12 +86,12 @@ int main (int ac, char* av[]) {
       return 1;
     }
     if (!vm.count("propagator-filename") && !vm.count("help")) {
-      cerr << "file name of the propagator must be given!" << endl;
+      cerr << "file name of the forward propagator must be given!" << endl;
       cout << endl << desc << endl;
       return 1;
     }
     if (!vm.count("b-propagator-filename") && !vm.count("help")) {
-      cerr << "file name of the b-propagator must be given!" << endl;
+      cerr << "file name of the second forward propagator must be given!" << endl;
       cout << endl << desc << endl;
       return 1;
     }
