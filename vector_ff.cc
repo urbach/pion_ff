@@ -122,12 +122,24 @@ int main (int ac, char* av[]) {
   double *cor = new double[T];
   complex<double> *scor = new complex<double>[T];
   double *tmp = new double[T];
+  double *ptmp = new double[T];
   complex<double> *stmp = new complex<double>[T];
   // set correlators to zero
   for(int t = 0; t < T; t++) {
     ppcor[t] = 0.;
     cor[t] = 0.;
     scor[t] = 0.;
+  }
+
+  ofstream opp, ovec, osca;
+  if(sampleout) {
+    char fn[400];
+    sprintf(fn, "ppcor.samples.%.2d.%.4d", momentum, nstore);
+    opp.open(fn);
+    sprintf(fn, "vector_ff.samples.%.2d.%.4d", momentum, nstore);
+    ovec.open(fn);
+    sprintf(fn, "scalar_ff.samples.%.2d.%.4d", momentum, nstore);
+    osca.open(fn);
   }
 
   for(size_t s = 0; s < samples; s++) {
@@ -179,14 +191,26 @@ int main (int ac, char* av[]) {
       //int t = tt;
       vector_range< vector< complex<double> > > vr(v, range(svol*12*t, svol*12*(t+1)));
       vector_range< vector< complex<double> > > bvr(bv, range(svol*12*t, svol*12*(t+1)));
-      ppcor[tt] += real(inner_prod(conj(bvr), vr));
+      ptmp[tt] = real(inner_prod(conj(bvr), vr));
+      ppcor[tt] += ptmp[tt];
     }
-
+    // sample wise output
+    if(sampleout) {
+      opp.write((char*) ptmp, (size_t) T*sizeof(double));
+    }
+    
     cout << "Computing 3-pt function for local vector V_0" << endl;
     local_vec(tmp, v, gv, (long unsigned int) T, (long unsigned int) L);
     for(int tt = 0; tt < T; tt++) {
       int t = (tt - t0+T)%T;
       cor[t] += tmp[tt];
+    }
+    // sample wise output
+    if(sampleout) {
+      for(int tt = 0; tt < T; tt++) {
+        int t = (tt + t0)%T;
+        ovec.write((char*) &tmp[t], (size_t) sizeof(double));
+      }
     }
 
     cout << "Computing 3-pt function for scalar" << endl;
@@ -195,10 +219,28 @@ int main (int ac, char* av[]) {
       int t = (tt - t0+T)%T;
       scor[t] += stmp[tt];
     }
+    // sample wise output
+    if(sampleout) {
+      for(int tt = 0; tt < T; tt++) {
+        int t = (tt + t0)%T;
+        ovec.write((char*) &stmp[t], (size_t) sizeof(complex<double>));
+      }
+    }
   }
 
-  // now the output
+  if(sampleout) {
+    opp.close();
+    ovec.close();
+    osca.close();
+  }
+  for(int t = 0; t < T; t++) {
+    ppcor[t] = ppcor[t]/svol*2*2*kappa*kappa/double(samples);
+    cor[t]   = cor[t]*2*2*2*kappa*kappa*kappa/double(samples);
+    scor[t]  = scor[t]*2*2*2*kappa*kappa*kappa/double(samples);
+  }
 
+
+  // now the output
   char prev;
   int prev2;
   ostringstream oss;
@@ -216,51 +258,69 @@ int main (int ac, char* av[]) {
   oss.width(prev2);
   oss << ends;
   ofstream ofs(oss.str().c_str());
-  for(int t = 0; t < T; t++) {
-    ofs << t << " " << ppcor[t]/svol*2*2*kappa*kappa/double(samples) << endl;
+  if(binary) {
+    ofs.write((char*) ppcor, T*sizeof(double));
+  }
+  else {
+    for(int t = 0; t < T; t++) {
+      ofs << t << " " << ppcor[t] << endl;
+    }
   }
   ofs.close();
+  oss.str("");
+  oss.clear();
   
-  ostringstream oss2;
-  oss2 << "vector_ff.";
-  prev2 = oss2.width(2);
-  prev = oss2.fill('0'); 
-  oss2 << momentum;
-  oss2.fill(prev);
-  oss2.width(prev2);
-  oss2 << ".";
-  oss2.width(4);
-  oss2.fill('0'); 
-  oss2 << nstore;
-  oss2.fill(prev);
-  oss2.width(prev2);
-  oss2 << ends;
-  ofs.open(oss2.str().c_str());
-  for(int t = 0; t < T; t++) {
-    ofs << t << " " << cor[t]*2*2*2*kappa*kappa*kappa/double(samples) << endl;
+  oss << "vector_ff.";
+  prev2 = oss.width(2);
+  prev = oss.fill('0'); 
+  oss << momentum;
+  oss.fill(prev);
+  oss.width(prev2);
+  oss << ".";
+  oss.width(4);
+  oss.fill('0'); 
+  oss << nstore;
+  oss.fill(prev);
+  oss.width(prev2);
+  oss << ends;
+  ofs.open(oss.str().c_str());
+  if(binary) {
+    ofs.write((char*) cor, T*sizeof(double));
+  }
+  else {
+    for(int t = 0; t < T; t++) {
+      ofs << t << " " << cor[t] << endl;
+    }
   }
   ofs.close();
+  oss.str("");
+  oss.clear();
 
-  ostringstream oss3;
-  oss3 << "scalar_ff.";
-  prev2 = oss3.width(2);
-  prev = oss3.fill('0'); 
-  oss3 << momentum;
-  oss3.fill(prev);
-  oss3.width(prev2);
-  oss3 << ".";
-  oss3.width(4);
-  oss3.fill('0'); 
-  oss3 << nstore;
-  oss3.fill(prev);
-  oss3.width(prev2);
-  oss3 << ends;
-  ofs.open(oss3.str().c_str());
-  for(int t = 0; t < T; t++) {
-    ofs << t << " " << real(scor[t]*2*2*2*kappa*kappa*kappa/double(samples)) << " " <<
-      imag(scor[t]*2*2*2*kappa*kappa*kappa/double(samples)) << endl;
+  oss << "scalar_ff.";
+  prev2 = oss.width(2);
+  prev = oss.fill('0'); 
+  oss << momentum;
+  oss.fill(prev);
+  oss.width(prev2);
+  oss << ".";
+  oss.width(4);
+  oss.fill('0'); 
+  oss << nstore;
+  oss.fill(prev);
+  oss.width(prev2);
+  oss << ends;
+  ofs.open(oss.str().c_str());
+  if(binary) {
+    ofs.write((char*) scor, T*sizeof(complex<double>));
+  }
+  else {
+    for(int t = 0; t < T; t++) {
+      ofs << t << " " << real(scor[t]) << " " << imag(scor[t]) << endl;
+    }
   }
   ofs.close();
+  oss.str("");
+  oss.clear();
   
   return(0);
 }
