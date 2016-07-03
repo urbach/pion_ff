@@ -3,7 +3,6 @@
 #include <fstream>
 #include <iterator>
 #include <string>
-#include <sstream>
 #include <boost/numeric/ublas/vector.hpp>
 #include <boost/numeric/ublas/vector_expression.hpp>
 #include <boost/numeric/ublas/vector_proxy.hpp>
@@ -26,8 +25,9 @@ using std::cout;
 using std::cerr;
 using std::complex;
 using std::ofstream;
+using std::ifstream;
 using std::string;
-using std::ostringstream;
+using std::ios;
 
 compressed_matrix<complex<double> > gamma5 (12, 12, 12);
 compressed_matrix<complex<double> > gamma0 (12, 12, 12);
@@ -43,7 +43,7 @@ int main (int ac, char* av[]) {
   string propfilename, gpropfilename, bpropfilename;
   double kappa;
   int proppos, gproppos, bproppos, momentum, samples;
-  bool binary, sampleout;
+  bool binary = false, sampleout = false;
   try {
     po::options_description desc("Allowed options");
     desc.add_options()
@@ -59,8 +59,8 @@ int main (int ac, char* av[]) {
       ("gen-propagator-pos", po::value< int >(&gproppos)->default_value(0), "position of sequential propagator binary data in lime file")
       ("b-propagator-pos", po::value< int >(&bproppos)->default_value(0), "position of second forward propagator binary data in lime file")
       ("momentum,p",  po::value< int >(&momentum)->default_value(0), "momentum counter for naming output files")
-      ("binary,b", po::value< bool >(&binary)->default_value(false), "write results in binary format instead of text format")
-      ("sample-output,S", po::value< bool >(&sampleout)->default_value(false), "write results additionally sample-wise in binary format") 
+      ("binary,b", "write results in binary format instead of text format")
+      ("sample-output,S", "write results additionally sample-wise in binary format") 
       ("samples,s", po::value< int >(&samples)->default_value(1), "number of samples per gauge")
       ;
 
@@ -72,7 +72,10 @@ int main (int ac, char* av[]) {
       cout << desc << endl;
       return 1;
     }
-    if (vm.count("binary")) {
+    if (vm.count("sample-output") || (vm.count("S"))) {
+      sampleout = true;
+    }
+    if (vm.count("binary") || (vm.count("b"))) {
       binary=true;
     }
     if (!vm.count("spatialsize") && !vm.count("help")) {
@@ -135,23 +138,24 @@ int main (int ac, char* av[]) {
   if(sampleout) {
     char fn[400];
     sprintf(fn, "ppcor.samples.%.2d.%.4d", momentum, nstore);
-    opp.open(fn);
+    opp.open(fn, ios::out|ios::binary);
     sprintf(fn, "vector_ff.samples.%.2d.%.4d", momentum, nstore);
-    ovec.open(fn);
+    ovec.open(fn, ios::out|ios::binary);
     sprintf(fn, "scalar_ff.samples.%.2d.%.4d", momentum, nstore);
-    osca.open(fn);
+    osca.open(fn, ios::out|ios::binary);
   }
 
   for(size_t s = 0; s < samples; s++) {
 
-    FILE * ifs = NULL;
+    ifstream ifs;
     char source_filename[400];
     
     // we first need to determine the time slice for this sample
     for(size_t t = 0; t < T; t++) {
       sprintf(source_filename, "%s.%.4d.%.5lu.%.2lu.inverted", propfilename.c_str(), nstore, s, t);
-      if( (ifs = fopen(source_filename, "r")) != NULL) {
-        fclose(ifs);
+      ifs.open(source_filename);
+      if(ifs.is_open()) {
+        ifs.close();
         t0 = t;
         break;
       }
@@ -188,14 +192,13 @@ int main (int ac, char* av[]) {
     cout << "Computing 2-pt function " << endl;
     for(int tt = 0; tt < T; tt++) {
       int t = (tt + t0)%T;
-      //int t = tt;
       vector_range< vector< complex<double> > > vr(v, range(svol*12*t, svol*12*(t+1)));
       vector_range< vector< complex<double> > > bvr(bv, range(svol*12*t, svol*12*(t+1)));
       ptmp[tt] = real(inner_prod(conj(bvr), vr));
       ppcor[tt] += ptmp[tt];
     }
     // sample wise output
-    if(sampleout) {
+    if(sampleout && opp.is_open()) {
       opp.write((char*) ptmp, (size_t) T*sizeof(double));
     }
     
@@ -206,7 +209,7 @@ int main (int ac, char* av[]) {
       cor[t] += tmp[tt];
     }
     // sample wise output
-    if(sampleout) {
+    if(sampleout && ovec.is_open()) {
       for(int tt = 0; tt < T; tt++) {
         int t = (tt + t0)%T;
         ovec.write((char*) &tmp[t], (size_t) sizeof(double));
@@ -220,10 +223,10 @@ int main (int ac, char* av[]) {
       scor[t] += stmp[tt];
     }
     // sample wise output
-    if(sampleout) {
+    if(sampleout && ovec.is_open()) {
       for(int tt = 0; tt < T; tt++) {
         int t = (tt + t0)%T;
-        ovec.write((char*) &stmp[t], (size_t) sizeof(complex<double>));
+        osca.write((char*) &stmp[t], (size_t) sizeof(complex<double>));
       }
     }
   }
@@ -241,23 +244,9 @@ int main (int ac, char* av[]) {
 
 
   // now the output
-  char prev;
-  int prev2;
-  ostringstream oss;
-  oss << "ppcor.";
-  prev2 = oss.width(2);
-  prev = oss.fill('0'); 
-  oss << momentum;
-  oss.fill(prev);
-  oss.width(prev2);
-  oss << ".";
-  oss.width(4);
-  oss.fill('0'); 
-  oss << nstore;
-  oss.fill(prev);
-  oss.width(prev2);
-  oss << ends;
-  ofstream ofs(oss.str().c_str());
+  char fn[400];
+  sprintf(fn, "ppcor.%.2d.%.4d", momentum, nstore);
+  ofstream ofs(fn);
   if(binary) {
     ofs.write((char*) ppcor, T*sizeof(double));
   }
@@ -267,23 +256,9 @@ int main (int ac, char* av[]) {
     }
   }
   ofs.close();
-  oss.str("");
-  oss.clear();
   
-  oss << "vector_ff.";
-  prev2 = oss.width(2);
-  prev = oss.fill('0'); 
-  oss << momentum;
-  oss.fill(prev);
-  oss.width(prev2);
-  oss << ".";
-  oss.width(4);
-  oss.fill('0'); 
-  oss << nstore;
-  oss.fill(prev);
-  oss.width(prev2);
-  oss << ends;
-  ofs.open(oss.str().c_str());
+  sprintf(fn, "vector_ff.%.2d.%.4d", momentum, nstore);
+  ofs.open(fn);
   if(binary) {
     ofs.write((char*) cor, T*sizeof(double));
   }
@@ -293,23 +268,9 @@ int main (int ac, char* av[]) {
     }
   }
   ofs.close();
-  oss.str("");
-  oss.clear();
 
-  oss << "scalar_ff.";
-  prev2 = oss.width(2);
-  prev = oss.fill('0'); 
-  oss << momentum;
-  oss.fill(prev);
-  oss.width(prev2);
-  oss << ".";
-  oss.width(4);
-  oss.fill('0'); 
-  oss << nstore;
-  oss.fill(prev);
-  oss.width(prev2);
-  oss << ends;
-  ofs.open(oss.str().c_str());
+  sprintf(fn, "scalar_ff.%.2d.%.4d", momentum, nstore);
+  ofs.open(fn);
   if(binary) {
     ofs.write((char*) scor, T*sizeof(complex<double>));
   }
@@ -319,8 +280,6 @@ int main (int ac, char* av[]) {
     }
   }
   ofs.close();
-  oss.str("");
-  oss.clear();
   
   return(0);
 }
