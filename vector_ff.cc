@@ -41,7 +41,6 @@ int main (int ac, char* av[]) {
 
   int T, L, t0 = -1, nstore;
   string propfilename, gpropfilename, bpropfilename;
-  double kappa;
   int proppos, gproppos, bproppos, momentum, samples;
   bool binary = false, sampleout = false;
   try {
@@ -51,7 +50,6 @@ int main (int ac, char* av[]) {
       ("spatialsize,L", po::value<int>(&L), "spatial lattice size")
       ("temporalsize,T", po::value<int>(&T), "temporal lattice size")
       ("config-number,n", po::value<int>(&nstore)->default_value(0), "configuration number")
-      ("kappa,k", po::value<double>(&kappa)->default_value(0.5), "hopping parameter value")
       ("propagator-filename", po::value< string >(&propfilename), "basefile name of the forward propagator")
       ("b-propagator-filename", po::value< string >(&bpropfilename), "basefile name of the second forward propagator")
       ("gen-propagator-filename", po::value< string >(&gpropfilename), "basefile name of the sequential propagator")
@@ -237,9 +235,9 @@ int main (int ac, char* av[]) {
     osca.close();
   }
   for(int t = 0; t < T; t++) {
-    ppcor[t] = ppcor[t]/svol*2*2*kappa*kappa/double(samples);
-    cor[t]   = cor[t]*2*2*2*kappa*kappa*kappa/double(samples);
-    scor[t]  = scor[t]*2*2*2*kappa*kappa*kappa/double(samples);
+    ppcor[t] = ppcor[t]/svol/double(samples);
+    cor[t]   = cor[t]/double(samples);
+    scor[t]  = scor[t]/double(samples);
   }
 
 
